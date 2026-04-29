@@ -330,43 +330,6 @@ export default {
             return;
           }
 
-// Inside your client.on('interactionCreate', async interaction => { ... }) logic:
-
-if (interaction.isButton()) {
-    if (interaction.customId.startsWith('hirable_ticket')) {
-        // 1. Acknowledge the interaction immediately so it doesn't "Fail"
-        await interaction.deferReply({ ephemeral: true });
-
-        try {
-            // 2. Extract info from the ID: hirable_ticket_POSTID_USERID
-            const [,, postId, targetUserId] = interaction.customId.split('_');
-            const targetUser = await interaction.client.users.fetch(targetUserId);
-
-            // 3. Trigger the Ticket Creation
-            // Note: Since you are using a Titan/Tickets.bot fork, you must call 
-            // the specific function your bot uses to open tickets. 
-            // Usually, it looks something like this:
-            
-            /* await client.tickets.create({
-                guild: interaction.guild,
-                user: interaction.user,
-                category: "General Tickets", // Make sure this matches your category name
-                reason: `Hiring Inquiry for ${targetUser.tag} (Post: ${postId})`
-            });
-            */
-
-            // Temporary confirmation message so you can see it works:
-            await interaction.editReply({
-                content: `✅ Ticket request sent! Opening a ticket to help you contact **${targetUser.username}** regarding listing **${postId}**.`
-            });
-
-        } catch (error) {
-            console.error('Error handling hire button:', error);
-            await interaction.editReply({ content: "❌ Failed to open a ticket. Please contact an admin." });
-        }
-    }
-}
-
           if (interaction.customId.startsWith('jtc_')) {
             logger.debug(`Skipping modal handler lookup for inline-awaited modal: ${interaction.customId}`, {
               event: 'interaction.modal.inline_skipped',
