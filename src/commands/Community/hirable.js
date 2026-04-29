@@ -54,20 +54,12 @@ function nowTime() {
     return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
-/**
- * Enhanced channel finder. 
- * Checks cache first, then fetches if necessary to prevent "Configuration Error".
- */
 async function findChannel(guild, channelName) {
-    // 1. Try finding in cache
     let channel = guild.channels.cache.find(c => c.name === channelName && c.isTextBased());
-    
-    // 2. If not in cache, force a fetch (Titan/Discord.js cache issues)
     if (!channel) {
         const fetchedChannels = await guild.channels.fetch();
         channel = fetchedChannels.find(c => c.name === channelName && c.isTextBased());
     }
-    
     return channel ?? null;
 }
 
@@ -85,28 +77,27 @@ async function fetchImageAttachment(data, filename = 'portfolio.png') {
 
 // ─── Embed Builders ───────────────────────────────────────────────────────────
 
+/**
+ * Remade Public Embed - High Quality
+ */
 function buildPublicEmbed(data, submitter, postId) {
     const roleLabel = ROLE_LABELS[data.role] ?? data.role;
     const roleColor = ROLE_COLORS[data.role]  ?? COLOR_APPROVED;
 
-    const descParts = [
-        data.about,
-        '',
-        `**Portfolio / Examples**\n${data.portfolio || 'None provided'}`,
-        '',
-        `**Availability**\n${data.availability}`,
-        '',
-        `**Rate / Compensation**\n${data.rate}`,
-        '',
-        `**Contact**\n<@${submitter.id}>`,
-    ];
-
     const embed = new EmbedBuilder()
-        .setAuthor({ name: submitter.username, iconURL: submitter.displayAvatarURL({ size: 64 }) })
-        .setTitle(`${submitter.username} — Available for ${roleLabel}`)
-        .setDescription(descParts.join('\n'))
+        .setAuthor({ name: `${submitter.username} is Hirable!`, iconURL: submitter.displayAvatarURL({ size: 64 }) })
+        .setTitle(`💼 ${roleLabel} Portfolio`)
+        .setDescription(data.about)
         .setColor(roleColor)
-        .setFooter({ text: `Post ID: (${postId}) • Approved • Today at ${nowTime()}` });
+        .addFields(
+            { name: '🔗 Portfolio / Work', value: data.portfolio || 'No links provided', inline: false },
+            { name: '⏰ Availability', value: data.availability, inline: true },
+            { name: '💰 Expected Rate', value: data.rate, inline: true },
+            { name: '👤 Contact', value: `<@${submitter.id}>`, inline: true }
+        )
+        .setThumbnail(submitter.displayAvatarURL())
+        .setFooter({ text: `Post ID: ${postId} • Click the button below to hire this user` })
+        .setTimestamp();
 
     if (data.hasImage) embed.setImage('attachment://portfolio.png');
     return embed;
@@ -122,19 +113,28 @@ function buildLogEmbed(data, submitter, postId, status = 'pending', reviewerTag 
         .setTitle(`Hirable Submission — ${submitter.username}`)
         .setColor(colorMap[status] ?? COLOR_PENDING)
         .addFields(
-            { name: 'Role',          value: roleLabel,                                     inline: true  },
-            { name: 'Submitted By',  value: `<@${submitter.id}> (${submitter.tag})`,         inline: true  },
-            { name: 'Status',        value: statusMap[status] ?? 'Pending Review',           inline: true  },
-            { name: 'About / Skills',value: data.about.slice(0, 1024),                       inline: false },
-            { name: 'Portfolio',     value: data.portfolio || 'None provided',               inline: false },
-            { name: 'Availability',  value: data.availability,                               inline: true  },
-            { name: 'Rate',          value: data.rate,                                       inline: true  },
+            { name: 'Role',          value: roleLabel,                         inline: true  },
+            { name: 'Submitted By',  value: `<@${submitter.id}>`,              inline: true  },
+            { name: 'Status',        value: statusMap[status] ?? 'Pending Review',   inline: true  },
+            { name: 'About / Skills',value: data.about.slice(0, 1024),         inline: false },
         )
         .setTimestamp()
         .setFooter({ text: `Post ID: (${postId})${reviewerTag ? ` • Reviewed by ${reviewerTag}` : ''}` });
 
     if (data.hasImage) embed.setImage('attachment://portfolio.png');
     return embed;
+}
+
+// ─── Component Builders ───────────────────────────────────────────────────────
+
+function buildPublicButtons(postId, creatorId) {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`hirable_ticket_${postId}_${creatorId}`)
+            .setLabel('Hire This User')
+            .setEmoji('📩')
+            .setStyle(ButtonStyle.Primary)
+    );
 }
 
 function buildApprovalButtons(postId, disabled = false) {
@@ -157,7 +157,7 @@ function buildApprovalButtons(postId, disabled = false) {
 export default {
     data: new SlashCommandBuilder()
         .setName('hirable')
-        .setDescription('List yourself as available for hire on a project.')
+        .setDescription('List yourself as available for hire.')
         .setDMPermission(false)
         .addStringOption(option =>
             option.setName('role').setDescription('Work type').setRequired(true)
@@ -177,30 +177,15 @@ export default {
             const roleValue  = interaction.options.getString('role');
             const attachment = interaction.options.getAttachment('portfolio');
 
-            if (attachment && !attachment.contentType?.startsWith('image/')) {
-                return await interaction.reply({
-                    embeds: [errorEmbed('Invalid Attachment', 'Please upload an image file.')],
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
-
-            // MODAL DEFINITION
+            // Modal logic remains the same...
             const modal = new ModalBuilder()
                 .setCustomId('hirable_submit_modal')
                 .setTitle('List Yourself as Available')
                 .addComponents(
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder().setCustomId('hirable_about').setLabel('About You').setStyle(TextInputStyle.Paragraph).setMinLength(30).setRequired(true)
-                    ),
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder().setCustomId('hirable_portfolio').setLabel('Portfolio Links').setStyle(TextInputStyle.Paragraph).setRequired(false)
-                    ),
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder().setCustomId('hirable_availability').setLabel('Availability').setStyle(TextInputStyle.Short).setRequired(true)
-                    ),
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder().setCustomId('hirable_rate').setLabel('Rate').setStyle(TextInputStyle.Short).setRequired(true)
-                    ),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('hirable_about').setLabel('About You').setStyle(TextInputStyle.Paragraph).setMinLength(30).setRequired(true)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('hirable_portfolio').setLabel('Portfolio Links').setStyle(TextInputStyle.Paragraph).setRequired(false)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('hirable_availability').setLabel('Availability').setStyle(TextInputStyle.Short).setRequired(true)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('hirable_rate').setLabel('Rate').setStyle(TextInputStyle.Short).setRequired(true)),
                 );
 
             await interaction.showModal(modal);
@@ -213,7 +198,6 @@ export default {
             if (!submitted) return;
             await submitted.deferReply({ flags: MessageFlags.Ephemeral });
 
-            // DATA OBJECT
             const hirableData = {
                 role: roleValue,
                 about: submitted.fields.getTextInputValue('hirable_about').trim(),
@@ -224,38 +208,21 @@ export default {
                 imageUrl: attachment?.url ?? null,
             };
 
-            // CHECK CONFIGURATION
             const logsChannel = await findChannel(interaction.guild, HIRABLE_LOGS_CHANNEL_NAME);
-            
-            if (!logsChannel) {
-                return await submitted.editReply({
-                    embeds: [errorEmbed(
-                        'Configuration Error',
-                        `Bot cannot find \`#${HIRABLE_LOGS_CHANNEL_NAME}\`. Ensure the channel exists and the bot has **View Channel** permissions.`
-                    )],
-                });
-            }
+            if (!logsChannel) return await submitted.editReply({ content: "Error: Logs channel not found." });
 
             const postId = generatePostId();
             const logImage = await fetchImageAttachment(hirableData);
             
             const logMessage = await logsChannel.send({
-                embeds:     [buildLogEmbed(hirableData, interaction.user, postId, 'pending')],
+                embeds: [buildLogEmbed(hirableData, interaction.user, postId, 'pending')],
                 components: [buildApprovalButtons(postId, false)],
                 ...(logImage ? { files: [logImage] } : {}),
             });
 
-            await submitted.editReply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle('Listing Submitted')
-                        .setDescription('Your listing is now under review by the moderation team.')
-                        .setColor(COLOR_APPROVED)
-                        .setTimestamp(),
-                ],
-            });
+            await submitted.editReply({ content: "Application submitted for review!" });
 
-            // LOGIC FOR BUTTONS (Simplified)
+            // BUTTON COLLECTOR
             const collector = logsChannel.createMessageComponentCollector({
                 componentType: ComponentType.Button,
                 time: 7 * 24 * 60 * 60 * 1000,
@@ -272,6 +239,7 @@ export default {
                         const publicImage = await fetchImageAttachment(hirableData);
                         await destChannel.send({
                             embeds: [buildPublicEmbed(hirableData, interaction.user, postId)],
+                            components: [buildPublicButtons(postId, interaction.user.id)],
                             ...(publicImage ? { files: [publicImage] } : {}),
                         });
                     }
@@ -281,8 +249,6 @@ export default {
                         components: [buildApprovalButtons(postId, true)],
                     });
                 }
-                
-                // Add Rejection logic here similarly...
             });
 
         } catch (error) {
