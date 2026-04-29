@@ -25,7 +25,7 @@ export const botConfig = {
     activities: [
       {
         // Text users will see (example: "Playing /help | Titan Bot").
-        name: "Made with ❤️",
+        name: "Watching over DevMarket",
         // Activity type number (0 = Playing).
         type: 0, 
       },
@@ -136,7 +136,7 @@ export const botConfig = {
     },
     footer: {
       // Default footer text used in bot embeds.
-      text: "Titan Bot",
+      text: "DevMarket Automation",
       // Footer icon URL (null = no icon).
       icon: null,
     },
@@ -156,9 +156,9 @@ export const botConfig = {
   economy: {
     currency: {
       // Currency display name.
-      name: "coins",
+      name: "cash",
       // Plural display name.
-      namePlural: "coins",
+      namePlural: "multiple money",
       // Currency symbol shown in balances.
       symbol: "$",
     },
@@ -281,7 +281,7 @@ export const botConfig = {
     announcementChannel: null,
 
     // Timezone used to calculate birthday dates.
-    timezone: "UTC",
+    timezone: "ETC",
   },
 
   // =========================
@@ -423,7 +423,7 @@ export const botConfig = {
   messages: {
     noPermission: "You do not have permission to use this command.",
     cooldownActive: "Please wait {time} before using this command again.",
-    errorOccurred: "An error occurred while executing this command.",
+    errorOccurred: "An error occurred while executing this command. Please open a support ticket for a bug report.",
     missingPermissions:
       "I am missing required permissions to perform this action.",
     commandDisabled: "This command has been disabled.",
@@ -436,30 +436,30 @@ export const botConfig = {
   // Set any feature to `false` to disable it globally.
   features: {
     // Core systems.
-    economy: true,
-    leveling: true,
-    moderation: true,
+    economy: false,
+    leveling: false,
+    moderation: false,
     logging: true,
-    welcome: true,
+    welcome: false,
 
     // Community engagement systems.
-    tickets: true,
-    giveaways: true,
-    birthday: true,
-    counter: true,
+    tickets: false,
+    giveaways: false,
+    birthday: false,
+    counter: false,
 
     // Security and self-service systems.
-    verification: true,
-    reactionRoles: true,
-    joinToCreate: true,
+    verification: false,
+    reactionRoles: false,
+    joinToCreate: false,
 
     // Utility/quality-of-life modules.
-    voice: true,
-    search: true,
-    tools: true,
-    utility: true,
-    community: true,
-    fun: true,
+    voice: false,
+    search: false,
+    tools: false,
+    utility: false,
+    community: false,
+    fun: false,
   },
 };
 
