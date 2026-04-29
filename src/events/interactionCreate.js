@@ -330,6 +330,22 @@ export default {
             return;
           }
 
+            // Inside your button interaction handler
+          if (interaction.customId.startsWith('hirable_ticket')) {
+            const [,, postId, creatorId] = interaction.customId.split('_');
+    
+            // Trigger Titan's ticket creation logic
+            // Usually, you call the function that opens a ticket:
+            // ticketManager.createTicket(interaction, 'general', { 
+            //    reason: `Inquiring about hiring <@${creatorId}> (Ref: ${postId})` 
+            // });
+
+            await interaction.reply({ 
+                content: `Opening a ticket to contact <@${creatorId}>...`, 
+                ephemeral: true 
+            });
+          }
+
           if (interaction.customId.startsWith('jtc_')) {
             logger.debug(`Skipping modal handler lookup for inline-awaited modal: ${interaction.customId}`, {
               event: 'interaction.modal.inline_skipped',
